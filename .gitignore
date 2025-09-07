@@ -7,3 +7,28 @@ Thumbs.db
 .nyc_output/
 .vscode/
 *.log
+
+# npm debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+ehthumbs.db
+Icon?
+Desktop.ini
+
+# IDEs and editors
+.idea/
+.history/
+.sass-cache/
+*.swp
+*.swo
+
+# Build output
+dist/
+build/
+
+# Misc
+logs/
+pids/

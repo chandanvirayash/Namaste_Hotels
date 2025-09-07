@@ -8,6 +8,8 @@ const listing = require("../models/listing.js");
 
 const mongo_url="mongodb://127.0.0.1:27017/wanderlust";
 
+mongoose.set('bufferTimeoutMS', 30000); // Increase timeout to 30 seconds
+
 
 main()
 .then(()=>{

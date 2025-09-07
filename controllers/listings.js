@@ -42,6 +42,7 @@ module.exports.showListings = (async (req, res) => {
             }
         })
         .populate("owner")
+        .lean();
     if(!Listing){
         req.flash("success", "Listings you requested does not exist")
         res.redirect("/listings")
@@ -107,14 +108,39 @@ module.exports.updateListing=(async(req,res)=>{
 
 
 
-
-    let Listing=await listing.findByIdAndUpdate(id,{...req.body.listing})
+    let Listing=await listing.findByIdAndUpdate(id,{...req.body.listing},{new:true})
     if (typeof req.file    !=="undefined"){
 let url= req.file.path;
 let filename = req.file.filename;
 Listing.image = {url,filename}
 await Listing.save();
 }
+
+    // Re-geocode if location changed or geometry is missing
+    try {
+        const locationFromForm = req.body?.listing?.location;
+        const needsGeometry = !Listing.geometry || !Array.isArray(Listing.geometry.coordinates) || Listing.geometry.coordinates.length !== 2;
+        const shouldGeocode = needsGeometry || !!locationFromForm;
+
+        if (shouldGeocode) {
+            const queryLocation = locationFromForm || Listing.location;
+            if (queryLocation) {
+                const response = await geocodingClient.forwardGeocode({
+                query: queryLocation,
+                limit: 1,
+            }).send();
+
+            if (response?.body?.features?.[0]?.geometry) {
+                Listing.geometry = response.body.features[0].geometry;
+                await Listing.save();
+            }
+            }
+        }
+    } catch (error) {
+        // Non-fatal: continue even if geocoding fails
+        console.error('Re-geocoding failed during update:', error?.message || error);
+    }
+
     req.flash("success", "Listing Updated")
     res.redirect("/listings")
 })

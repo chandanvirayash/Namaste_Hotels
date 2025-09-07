@@ -80,6 +80,11 @@ cookies:{
 //     res.send("hey,server is working")
 // })
 
+// Redirect root to listings
+app.get("/", (req, res) => {
+    res.redirect("/listings");
+});
+
 
 
 

@@ -29,6 +29,10 @@ const listingRouter = require("./router/listing.js")
 // const mongo_url="mongodb://127.0.0.1:27017/wanderlust";
 
 const dbUrl = process.env.ATLASDB_URL;
+if (!dbUrl) {
+    console.error("ATLASDB_URL not set. Check your .env or environment variables.");
+    process.exit(1);
+}
 
 app.set("view engine","ejs");
 app.set("views",path.join(__dirname,"views"));
@@ -55,7 +59,7 @@ touchAfter : 24*3600,
 })
 
 
-store.on("error",()=>{
+store.on("error",(err)=>{
 
     console.log("ERROR in MONGO SESSION STORE",err);
 })

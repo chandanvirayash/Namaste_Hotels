@@ -31,11 +31,9 @@ const listingSchema = new Schema({
     type: {
       type: String,
       enum: ['Point'], // Correct enum value
-      required: true,
     },
     coordinates: {
       type: [Number],
-      required: true,
     },
   },
 });
@@ -49,3 +47,6 @@ listingSchema.post("findOneAndDelete", async (listing) => {
 const Listing = mongoose.model("Listing", listingSchema);
 
 module.exports = Listing;
+
+// Enable geospatial queries on geometry
+listingSchema.index({ geometry: "2dsphere" });

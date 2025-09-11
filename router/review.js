@@ -26,10 +26,12 @@ router.post("/",isloggedIn,validateReview,wrapasync(reviewController.createRevie
     
     //DELETE REVIEW ROUTE
     
-    router.delete("/:reviewId",isloggedIn,isReviewAuthor,wrapasync(reviewController.destroyReview )
-    
-    
-    )
+router.delete(
+    "/:reviewId",
+    isloggedIn,
+    isReviewAuthor,
+    wrapasync(reviewController.destroyReview)
+);
     
     
     

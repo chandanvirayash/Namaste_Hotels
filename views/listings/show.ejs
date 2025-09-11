@@ -16,8 +16,11 @@
         <div class="card-body">
             <p class="card-text">owned by <i><%= Listing.owner.username %></i></p>
             <p class="card-text"><%= Listing.description %></p>
-            <p class="card-text"><%= Listing.location %></p>
-            <p class="card-text"><%= Listing.country %></p>
+            <p class="card-text d-flex align-items-center justify-content-between">
+                <span><%= Listing.location %> · <%= Listing.country %></span>
+                <span class="starability-result" data-rating="<%= avgRatingRounded || 0 %>"></span>
+            </p>
+            <p class="card-text text-muted"><%= ratingCount %> review<%= ratingCount === 1 ? '' : 's' %></p>
         </div>
     </div>
     
@@ -33,6 +36,60 @@
     <div class="col-8 offset-3 mb-3">
         <h3>Where you'll be</h3>
         <div id="map"></div>
+    </div>
+
+    <div class="col-8 offset-3 mb-5">
+        <h3>Reviews</h3>
+        <% if (Array.isArray(Listing.reviews) && Listing.reviews.length) { %>
+            <% Listing.reviews.forEach(function(r){ %>
+                <div class="mb-3 p-3 border rounded">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <strong><%= r.author && r.author.username ? r.author.username : 'Anonymous' %></strong>
+                            <small class="text-muted"> · <%= new Date(r.createdAt).toLocaleDateString() %></small>
+                        </div>
+                        <span class="starability-result" data-rating="<%= r.rating %>"></span>
+                    </div>
+                    <p class="mb-0 mt-2"><%= r.comment %></p>
+                    <% if (currUser && r.author && String(r.author._id) === String(currUser._id)) { %>
+                        <form class="mt-2" method="POST" action="/listings/<%= Listing._id %>/reviews/<%= r._id %>?_method=DELETE">
+                            <button class="btn btn-sm btn-outline-danger">Delete</button>
+                        </form>
+                    <% } %>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <p class="text-muted">No reviews yet.</p>
+        <% } %>
+
+        <% if (currUser) { %>
+        <hr/>
+        <h5 class="mt-4">Add a review</h5>
+        <form method="POST" action="/listings/<%= Listing._id %>/reviews" class="mt-2">
+            <div class="mb-2">
+                <fieldset class="starability-slot">
+                    <input type="radio" id="no-rate" class="input-no-rate" name="review[rating]" value="" checked aria-label="No rating." />
+                    <input type="radio" id="rate1" name="review[rating]" value="1" />
+                    <label for="rate1" title="Terrible">1 star</label>
+                    <input type="radio" id="rate2" name="review[rating]" value="2" />
+                    <label for="rate2" title="Not good">2 stars</label>
+                    <input type="radio" id="rate3" name="review[rating]" value="3" />
+                    <label for="rate3" title="Average">3 stars</label>
+                    <input type="radio" id="rate4" name="review[rating]" value="4" />
+                    <label for="rate4" title="Very good">4 stars</label>
+                    <input type="radio" id="rate5" name="review[rating]" value="5" />
+                    <label for="rate5" title="Amazing">5 stars</label>
+                    <span class="starability-focus-ring"></span>
+                </fieldset>
+            </div>
+            <div class="mb-3">
+                <textarea class="form-control" name="review[comment]" rows="3" placeholder="Share your experience" required></textarea>
+            </div>
+            <button class="btn btn-dark">Post review</button>
+        </form>
+        <% } else { %>
+            <p><a href="/login">Log in</a> to add a review.</p>
+        <% } %>
     </div>
 </div>
 

@@ -57,6 +57,12 @@ display: none;
 
     <div id="filters"> 
 
+   <% if (typeof searchQuery !== 'undefined' && searchQuery) { %>
+     <div class="alert alert-light w-100 mt-2" role="alert">
+       Showing results for: <strong><%= searchQuery %></strong>
+     </div>
+   <% } %>
+
    <div class="filter" >
     <div> <i class="fa-solid fa-fire"></i></div>
     <p>Trending</p>
@@ -135,7 +141,10 @@ display: none;
 
      
      <div class="row row-cols-lg-3 row-cols-md-3 row-cols-sm-1 mt-3">
-      <%for (let listing of alllisting) {%>
+      <% if (!alllisting || !alllisting.length) { %>
+        <div class="col-12 text-center text-muted py-5">No results found.</div>
+      <% } %>
+      <%for (let listing of alllisting) { %>
         <a href="/listings/<%=listing._id%>" class="listing-link">
           <div class="card col listing-card .">
             <div class="img_container">
@@ -143,9 +152,11 @@ display: none;
             </div>
             <div class="card-img-overlay"></div>
             <div class="card-body">
-              <p class="card-text pt-1"><b>
+              <p class="card-text pt-1 d-flex align-items-center justify-content-between"><b>
                   <%= listing.title %>
-                </b></p>
+                </b>
+                <span class="starability-result" data-rating="<%= listing._avgRating || 0 %>"></span>
+              </p>
               <p class="card-text">
                 <span>&#8377; <%= listing.price.toLocaleString("en-IN") %>/ night 
                   <i class="tax-info"> &nbsp; &nbsp;+18%GSt</i>

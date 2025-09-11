@@ -51,46 +51,31 @@ next();
 
 module.exports.validateListing = (req, res, next) => {
 
-    let { error } = listingSchema.validate(req.error);
+    const { error } = listingSchema.validate(req.body);
     if (error) {
-
-        let errMsg = error.details.map((el) => el.message).join(",");
-        throw new ExpressError(400, error)
-    } else {
-        next();
+        const errMsg = error.details.map((el) => el.message).join(",");
+        throw new ExpressError(400, errMsg);
     }
+    next();
 
 }
 
-module.exports. validateReview = (req, res, next) => {
-
-    let { error } = reviewSchema.validate(req.error);
+module.exports.validateReview = (req, res, next) => {
+    let { error } = reviewSchema.validate(req.body);
     if (error) {
-
         let errMsg = error.details.map((el) => el.message).join(",");
-        throw new ExpressError(400, error)
+        throw new ExpressError(400, errMsg);
     } else {
         next();
     }
 }
 
-
-
-
-module.exports.isReviewAuthor = async(req,res,next)=>{
-
-    let{id,reviewId} = req.params;
-
+module.exports.isReviewAuthor = async (req, res, next) => {
+    let { id, reviewId } = req.params;
     let review = await Review.findById(reviewId);
-    if (!review.author.equals(res.locals.currUser._id)){
-     req.flash("error","permission denied");
-   return  res.redirect(`/listings/${id}`);
-   
-
+    if (!review.author.equals(res.locals.currUser._id)) {
+        req.flash("error", "You are not the author of this review");
+        return res.redirect(`/listings/${id}`);
     }
-
-
-
-next();
-
+    next();
 }

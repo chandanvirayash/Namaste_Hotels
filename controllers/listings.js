@@ -12,10 +12,70 @@ const {listingSchema} = require('../schema.js')
 
 module.exports.index =  (async(req,res)=>{
 
-    
+    const q = (req.query.q || '').trim();
+    let allListingsRaw = [];
 
-    const alllisting = await listing.find({});
-    res.render("listings/index.ejs",{alllisting});
+    if (q) {
+        // Try geocoding the query into coordinates first
+        let coords = null;
+        try {
+            if (process.env.MAP_TOKEN) {
+                const response = await geocodingClient
+                    .forwardGeocode({ query: q, limit: 1 })
+                    .send();
+                const feature = response?.body?.features?.[0];
+                if (feature && feature.center && feature.center.length === 2) {
+                    coords = feature.center; // [lng, lat]
+                }
+            }
+        } catch (e) {
+            // ignore geocoding errors and fall back to regex search
+        }
+
+        if (coords) {
+            // Geo-near search within ~50km radius
+            allListingsRaw = await listing
+                .find({
+                    geometry: {
+                        $near: {
+                            $geometry: { type: 'Point', coordinates: coords },
+                            $maxDistance: 50_000,
+                        }
+                    }
+                })
+                .populate({ path: 'reviews', select: 'rating' })
+                .lean();
+        } else {
+            // Textual fallback
+            const query = {
+                $or: [
+                    { title: { $regex: q, $options: 'i' } },
+                    { description: { $regex: q, $options: 'i' } },
+                    { location: { $regex: q, $options: 'i' } },
+                    { country: { $regex: q, $options: 'i' } },
+                ]
+            };
+            allListingsRaw = await listing
+                .find(query)
+                .populate({ path: 'reviews', select: 'rating' })
+                .lean();
+        }
+    } else {
+        allListingsRaw = await listing
+        .find({})
+        .populate({ path: 'reviews', select: 'rating' })
+        .lean();
+    }
+
+    const alllisting = allListingsRaw.map((l) => {
+        const ratings = Array.isArray(l.reviews) ? l.reviews.map(r => r?.rating || 0).filter(n => typeof n === 'number') : [];
+        const count = ratings.length;
+        const avg = count > 0 ? (ratings.reduce((a,b)=>a+b,0) / count) : 0;
+        // attach integer avg for display (1-5)
+        return { ...l, _avgRating: Math.round(avg), _ratingCount: count };
+    });
+
+    res.render("listings/index.ejs",{alllisting, searchQuery: q});
 
     })
 
@@ -47,7 +107,13 @@ module.exports.showListings = (async (req, res) => {
         req.flash("success", "Listings you requested does not exist")
         res.redirect("/listings")
     }
-    res.render("listings/show.ejs", { Listing })
+    // Compute average rating for display
+    const ratings = Array.isArray(Listing.reviews) ? Listing.reviews.map(r => r?.rating || 0).filter(n => typeof n === 'number') : [];
+    const ratingCount = ratings.length;
+    const avgRating = ratingCount > 0 ? (ratings.reduce((a,b)=>a+b,0) / ratingCount) : 0;
+    const avgRatingRounded = Math.round(avgRating);
+
+    res.render("listings/show.ejs", { Listing, avgRatingRounded, ratingCount })
 
 })
 
@@ -56,21 +122,34 @@ module.exports.showListings = (async (req, res) => {
 module.exports.createListing = async (req, res, next) => {
 console.log("hello")
 
-    let response = await geocodingClient.forwardGeocode({
-        query: req.body.listing.location,
-        limit: 1,
-    })
-        .send();
+    // Attempt geocoding only if we have a token; handle invalid/unauthorized token gracefully
+    let geometryFromGeocode = null;
+    try {
+        if (process.env.MAP_TOKEN) {
+            const response = await geocodingClient
+                .forwardGeocode({ query: req.body.listing.location, limit: 1 })
+                .send();
+            geometryFromGeocode = response?.body?.features?.[0]?.geometry || null;
+        }
+    } catch (err) {
+        // Common when MAPBOX token is missing/invalid: 401 Not Authorized - Invalid Token
+        console.error("Geocoding failed:", err?.message || err);
+        req.flash("error", "Location lookup failed. Saved listing without map location.");
+    }
 
-    let url = req.file.path;
-    let filename = req.file.filename;
     const newlisting = new listing(req.body.listing);
     newlisting.owner = req.user._id;
-    newlisting.image = { url, filename };
 
-    newlisting.geometry = response.body.features[0].geometry;
+    // Image from Cloudinary via multer can be optional
+    if (req.file && req.file.path && req.file.filename) {
+        newlisting.image = { url: req.file.path, filename: req.file.filename };
+    }
 
-    let savedlisting=await newlisting.save();
+    if (geometryFromGeocode) {
+        newlisting.geometry = geometryFromGeocode;
+    }
+
+    const savedlisting = await newlisting.save();
 
     console.log(savedlisting)
     req.flash("success", "New Listing Created")

@@ -34,6 +34,26 @@
 
 
 }
+
+/* Attractive CTA button for Add Listing */
+.btn-add-listing{
+  background: linear-gradient(135deg, #fe424d 0%, #ff6a88 100%);
+  color: #fff !important;
+  border: none;
+  border-radius: 999px;
+  padding: 0.5rem 1.25rem;
+  box-shadow: 0 6px 14px rgba(254, 66, 77, 0.35);
+  transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+}
+.btn-add-listing:hover{
+  filter: brightness(1.03);
+  box-shadow: 0 10px 18px rgba(254, 66, 77, 0.45);
+  transform: translateY(-1px);
+}
+.btn-add-listing:active{
+  transform: translateY(0);
+  box-shadow: 0 4px 10px rgba(254, 66, 77, 0.35);
+}
 </style>
 
 
@@ -59,8 +79,8 @@
 
 
 
-  <form class="d-flex" role="search">
-    <input class="form-control me-2 search-inp" type="search" placeholder="Search destinations" >
+  <form class="d-flex" role="search" method="GET" action="/listings">
+    <input class="form-control me-2 search-inp" type="search" name="q" placeholder="Search destinations" value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>">
     <button class="btn btn-search" type="submit"><i class="fa-solid fa-magnifying-glass"></i>Search</button>
   </form>
 
@@ -70,7 +90,7 @@
 
 
         <div class="navbar-nav ms-auto" >
-          <a class="nav-link" href="/listings/new">Namaste Hostels your home</a>
+          <a class="nav-link btn-add-listing" href="/listings/new">Add Hotels</a>
           <% if(!currUser){ %>
  
             <a class="nav-link" href="/signup"> <b>Sign Up</b></a>
